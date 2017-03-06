@@ -187,7 +187,7 @@ var _ ={
     ajax: function(opt){
         /*是否需要加密*/
         if(!opt.noEncrypt){
-            opt = _.assembly(opt);
+             opt = _.extend(opt, _.assembly(opt));
         }
 
         $.ajax({
