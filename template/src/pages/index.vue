@@ -32,15 +32,12 @@
 			</div>
 			<div class="btn-group">
 				<a class="btn btn-main" href="javascript:" @click="login">登 录</a>
-				<button type="" @click="showForm=true"> 打开form</button>
-				<button type="" @click="showForm=false"> 关闭form</button>
 			</div>
 			<p>
 				<router-link to="/list">Go to list</router-link>
 			</p>
 		</div>
 		<xfoot></xfoot>
-		<xform v-if="showForm" v-on:hide="showForm=false"></xform>
 	</div>
 	<div v-else>
 		<ul>
@@ -51,15 +48,12 @@
 <script>
 	import xhead from '../components/head'
 	import xfoot from '../components/foot'
-	import xform from '../components/form'
 	import { mapGetters } from 'vuex'
 	// const initData = async store =>{
 	// 	await store.dispatch('getUser')
 	// }
-
 	export default {
 		data() {
-			alert(123)
 			return {
 				phone: '',
 				password: '',
@@ -71,8 +65,7 @@
 				isHaveProject: '',
 				inputType: 'password',
 				msg: '',
-				isWX: false,
-				showForm:false
+				isWX: false
 			}
 		},
 		computed: {
@@ -82,25 +75,17 @@
 		},
 		components: {
 			xhead,
-			xfoot,
-			xform
+			xfoot
 		},
-		mounted(){
-			// cMwebViewJsBridge(this.BridgeInit)
-		},
+		// mounted(){
+		// 	initData(this.$store)
+		// },
 		// watch: {
 		// 	'$route'(){
 		// 		initData(this.$store)
 		// 	}
 		// },
 		methods: {
-			BridgeInit(bridge,isAndroid){
-		        let param = { Status : false};
-		       bridge.callHandler('10005', isAndroid?JSON.stringify(param):param, isAndroid?this.showUT.toString(): this.showUT);
-			},
-			showUT(data){
-				alert(data)
-			},
 			togglePassword() {
 				this.inputType = (this.inputType == 'password') ? 'text' : 'password';
 			},

@@ -176,7 +176,7 @@ var _ ={
 
     	jsonString = JSON.stringify(opt.params);
     	jsonString = aesEncrypt(jsonString, appKeySecret, appKeySecret);
-    	signStr = appKeySecret + 'appKey' + appKey + 'jsonString' + jsonString + 'userToken' + userToken + 'v' + opt.version + appKeySecret;
+    	signStr = appKeySecret + 'appKey' + appKey + 'jsonString' + jsonString +  (userToken?'userToken' + userToken : '') + 'v' + opt.version + appKeySecret;
     	sign = CryptoJS.SHA1(signStr).toString().toUpperCase();
 
     	opt.url += opt.method;
@@ -187,7 +187,7 @@ var _ ={
     ajax: function(opt){
         /*是否需要加密*/
         if(!opt.noEncrypt){
-             opt = _.extend(opt, _.assembly(opt));
+            opt = _.extend(opt, _.assembly(opt));
         }
 
         $.ajax({

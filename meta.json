@@ -14,6 +14,18 @@
     "author": {
       "type": "string",
       "label": "Author"
+    },
+    "login":{
+      "type": "confirm",
+      "label": "Use login-component to  your project ?"
+    },
+    "register":{
+      "type": "confirm",
+      "label": "Use register-component to  your project ?"
+    },
+    "forgetpwd":{
+      "type": "confirm",
+      "label": "Use forgetpwd-component to  your project ?"
     }
   },
   "completeMessage": "{{#inPlace}}To get started:\n\n  npm install\n  npm run dev.{{else}}To get started:\n\n  cd {{destDirName}}\n  npm install\n  npm run dev.{{/inPlace}}"

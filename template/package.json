@@ -11,6 +11,15 @@
   "author": "{{ author }}",
   "license": "ISC",
   "devDependencies": {
+    {{#login}}
+    "niiwoo-login":"^1.0.0",
+    {{/login}}
+    {{#register}}
+    "niiwoo-register":"^1.0.0",
+    {{/register}}
+    {{#forgetpwd}}
+    "niiwoo-forgetpwd":"^1.0.0",
+    {{/forgetpwd}}
     "autoprefixer-loader": "^3.2.0",
     "babel-core": "^6.10.4",
     "babel-loader": "^6.2.4",
