@@ -12,6 +12,7 @@ export const login = ({ commit }, config) => {
 		},
 		cb: json =>{
 			if(json.Result == '1'){
+				_.toast(JSON.stringify(json.Data))
 	    		commit(types.RECEIVE_USER, json.Data)
 	    	}else{
 	    		_.toast(json.Message)

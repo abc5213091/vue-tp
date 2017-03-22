@@ -4,6 +4,7 @@ var path = require('path');
 var HtmlWebpackPlugin = require('html-webpack-plugin');
 var ExtractTextPlugin = require('extract-text-webpack-plugin');
 var TransferWebpackPlugin = require('transfer-webpack-plugin');
+var autoprefixer = require('autoprefixer');
 
 var isPro = process.env.NODE_ENV === 'production';
 var publicPath = isPro?'./':'/build/';
@@ -37,7 +38,7 @@ if(isPro){
 	    //把指定文件夹下的文件复制到指定的目录
 	    new TransferWebpackPlugin([
 	      {from: 'js',to:'js'},
-	      //{from: 'images/bank',to:'images/bank'}
+	      {from: 'images',to:'images'}
 	    ], path.resolve(__dirname)),
 
  	].concat(plugin);
@@ -75,12 +76,12 @@ module.exports = {
 			{
 				test: /\.css$/,
 				// loader: "style!css!less"
-				loader: ExtractTextPlugin.extract('style', ['css'])
+				loader: ExtractTextPlugin.extract('style', ['css!autoprefixer'])
 			},
 			{
 				test: /\.less$/,
-				// loader: "style!css!less"
-				loader: ExtractTextPlugin.extract('style', ['css','less'])
+				// loader: "style!css!less",
+				loader: ExtractTextPlugin.extract('style', ['css!autoprefixer','less'])
 			},
 			{
 				test:/\.vue$/,
@@ -105,7 +106,7 @@ module.exports = {
 	vue:{
 		loaders: {
 	      // less: 'style!css!less',
-	       css: ExtractTextPlugin.extract('vue-style-loader', 'css-loader')
+	       css: ExtractTextPlugin.extract('vue-style-loader', ['css!autoprefixer','less'])
 	    }
 	},
 	babel: {

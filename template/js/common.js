@@ -3,9 +3,18 @@ var ENV={
         dev:'http://192.168.18.30/niiwoo-api/', //开发服
         devF:'http://192.168.10.34:8080/niiwoo-api/', //阿福
         devK:'http://192.168.10.99:8080/niiwoo-api/',  //薛玉科
+        devJ:'http://192.168.10.50:8080/niiwoo-api/',  //冀超
         test:'https://test.niiwoo.com:5003/niiwoo-api/',//测试环境
         exp:'https://exp.niiwoo.com:4003/niiwoo-api/',  //体验环境
-        bbs:'https://app.niiwoo.com:5004/niiwoo-api/'  //线上环境
+        tiyan:'https://tiyan.niiwoo.com:4003/niiwoo-api/',  //体验环境
+        bbs:'https://app.niiwoo.com:5004/niiwoo-api/',  //线上环境
+        www:'https://app.niiwoo.com:5004/niiwoo-api/'  //线上环境
+    },
+    AENV={
+        test:'https://test.niiwoo.com:5016/activity-api/niwoportservice.svc/',
+        exp:'http://exp.niiwoo.com:4009/activity-api/niwoportservice.svc/',
+        bbs:'https://activity.niiwoo.com:5104/activity-api/niwoportservice.svc/',
+        www:'https://activity.niiwoo.com:5104/activity-api/niwoportservice.svc/',
     },
     APPID = {
         test: 'wxb3d25457b5a6fe49',
@@ -17,20 +26,22 @@ var ENV={
         var host = location.hostname.substring(0,location.hostname.indexOf('.'));
         return isNaN(host)?host:'test';
     })(),
+    DATA_KEY = 'INVEST', //项目key
+    COMMON_DATA = 'COMMON_DATA,Pay_Data,PayData,userToken,userId', //公共key
     appid = APPID[env],
     API = ENV[env];
 var _ ={
-	// 接口地址
+    // 接口地址
     routerUrl: API+'niwoportservice.svc/',
 
     jsjPath: {
-        wxphp: 'project/zm-loan/php/wx.php',
-        login: 'project/zm-loan/#/login',
-        myInfo: 'project/zm-loan/#/MyInfo'
+        recharge: '/h5/project/pay/',   //充值目录配置
+        myGift: '/h5/app/project/sign-in/index.html#/myGift?_k=p0fl2p'   //我的礼品
     },
     lljPath:{
         login: 'weixin/official-accounts/cash-emu/login.php',
     },
+    loadingStack:[],
     /*
         获取微信认证地址
         @type 0：极速借 1：蓝领借
@@ -47,7 +58,7 @@ var _ ={
         ];
         return 'https://open.weixin.qq.com/connect/oauth2/authorize?'+params.join('&');
     },
-	// 从 userAgent 判断是否在你我金融 app 中
+    // 从 userAgent 判断是否在你我金融 app 中
     isInNiiwooApp: function() {
         var ua = navigator.userAgent.toLowerCase();
         var mark = ua.indexOf('niiwoo');
@@ -57,6 +68,7 @@ var _ ={
             return false;
         }
     },
+    ua: navigator.userAgent,
     /*判断是否微信*/
     isWeChat: function() {
         var ua = navigator.userAgent.toLowerCase();
@@ -66,6 +78,14 @@ var _ ={
             return false;
         }
     },
+    //android终端或者uc浏览器
+    isAndroid: function(){
+        return _.ua.indexOf('Android') > -1 || this.ua.indexOf('Linux') > -1
+    },
+    //ios终端
+    isIOS: function(){
+        return !!_.ua.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/)
+    }, 
     // 获取你我金融app版本号
     getNiiwooAppVersion: function() {
         var ua = navigator.userAgent.toLowerCase();
@@ -109,19 +129,49 @@ var _ ={
         return sessionStorage.getItem(name);
     },
 
-    // 存储 localStorage
+    // 存储 localStorage  update by lihui on 2017年2月27日
     setLocalStorage: function(name, value) {
-       localStorage.setItem(name, value);
+        var data = localStorage.getItem(DATA_KEY) || '';
+        data = data ? JSON.parse(data) : {};
+
+        if( COMMON_DATA.indexOf(name) > -1){
+            localStorage.setItem(name, value);
+            return;
+        }
+
+        if( typeof name == 'string'){
+            data[name] = value;
+        }else if( typeof name == 'object'){
+            for(var item in name){
+                data[item] = name[item];
+            }
+        }  
+        
+        localStorage.setItem(DATA_KEY, JSON.stringify(data));
     },
 
     // 获取 localStorage
     getLocalStorage: function(name) {
-        return localStorage.getItem(name);
+        var data = localStorage.getItem(DATA_KEY) || '';
+
+        if(COMMON_DATA.indexOf(name) > -1){
+            return localStorage.getItem(name);
+        }
+
+        if(data){
+            data = JSON.parse(data);
+            return data[name] ? data[name] : '' ;
+        }
+        return '';
+    },
+    //清除 localstorage
+    clearLocalStorage: function(){
+        localStorage.setItem(DATA_KEY, '');
     },
 
     // 写入 cookie
-    setCookie: function(name, value) {
-        var Days = 30;
+    setCookie: function(name, value , day) {
+        var Days = day || 360;
         var exp = new Date();
         exp.setTime(exp.getTime() + Days * 24 * 60 * 60 * 1000);
         document.cookie = name + "=" + escape(value) + ";expires=" + exp.toGMTString();
@@ -153,41 +203,53 @@ var _ ={
     },
     // 参数合并
     extend:function(opt,args){
-		for(var name in args){
-			opt[name] = args[name];
-		}
-    	return opt
+        for(var name in args){
+            opt[name] = args[name];
+        }
+        return opt
     },
     // 重组参数
     assembly:function(opt){
-    	var  jsonString , signStr , sign , userToken = _.getLocalStorage("userToken") || null,
-    	_default={
-    		url : _.routerUrl,
-    		method : '',
-    		version : '',
-    		params : {}
-    	};
+        var  jsonString , signStr , sign , userToken = _.getLocalStorage("userToken") || null,
+        _default={
+            url : _.routerUrl,
+            method : '',
+            version : '',
+            params : {}
+        };
 
         // 开启loading
-        _.loading(opt.loading===false?false:true);
+        if(opt.loading === false){
+            _.loading(false)
+        }else{
+            _.loading(true)
+            _.loadingStack.push(1)
+        }
 
-    	opt = _.extend(_default,opt);
-    	opt.params = _.extend(opt.params,{t : new Date().getTime()});
+        opt = _.extend(_default,opt);
 
-    	jsonString = JSON.stringify(opt.params);
-    	jsonString = aesEncrypt(jsonString, appKeySecret, appKeySecret);
-    	signStr = appKeySecret + 'appKey' + appKey + 'jsonString' + jsonString +  (userToken?'userToken' + userToken : '') + 'v' + opt.version + appKeySecret;
-    	sign = CryptoJS.SHA1(signStr).toString().toUpperCase();
+        /*加入时间戳*/
+        opt.params = _.extend(opt.params,{t : new Date().getTime()});
 
-    	opt.url += opt.method;
-    	opt.url += opt.url.indexOf('?')>-1?'&':'?'+'appKey=' + appKey + '&v=' + opt.version +'&sign=' + sign + (userToken?'&userToken=' + userToken :'');
+        /*update by lihui */
+        if(opt.isAct){
+            opt.url = AENV[env]
+        }
 
-    	return {url:opt.url,data:{jsonString:jsonString}};
+        jsonString = JSON.stringify(opt.params);
+        jsonString = aesEncrypt(jsonString, appKeySecret, appKeySecret);
+        signStr = appKeySecret + 'appKey' + appKey + 'jsonString' + jsonString + (userToken?'userToken' + userToken : '') + 'v' + opt.version + appKeySecret;
+        sign = CryptoJS.SHA1(signStr).toString().toUpperCase();
+
+        opt.url += opt.method;
+        opt.url += opt.url.indexOf('?')>-1?'&':'?'+'appKey=' + appKey + '&v=' + opt.version +'&sign=' + sign + (userToken?'&userToken=' + userToken :'');
+
+        return {url:opt.url,data:{jsonString:jsonString}};
     },
     ajax: function(opt){
         /*是否需要加密*/
         if(!opt.noEncrypt){
-            opt = _.extend(opt, _.assembly(opt));
+            opt = _.assembly(opt);
         }
 
         $.ajax({
@@ -197,44 +259,34 @@ var _ ={
             async:  opt.async=='undefined' ? true : opt.async,
             data: opt.data ,
             success: function(db) {
-                if(typeof db === 'string'){
-                    db = JSON.parse(db)
-                }
+                db = _.formatData(db);
                 opt.cb && opt.cb(db);
             }
         });
     },
+    formatData:function(db){
+        // 关闭loading
+        _.loadingStack.pop();
+        _.loading(false);
+
+        if(!db) return {};
+        if(typeof db =='string'){
+            try{
+                db = JSON.parse(db);
+            }catch(e){
+                console.log('数据格式有误，不能进行JSON转化！');
+            }
+        }
+        return db;
+    },
     loading:function(isok){
         var tmp=
-            '<!-- loading 提示 -->'+
-            '<div class="wb-fix show" id="WbFix">'+
-                '<div class="sk-fading-circle">'+
-                    '<div class="sk-circle1 sk-circle"></div>'+
-                    '<div class="sk-circle2 sk-circle"></div>'+
-                    '<div class="sk-circle3 sk-circle"></div>'+
-                    '<div class="sk-circle4 sk-circle"></div>'+
-                    '<div class="sk-circle5 sk-circle"></div>'+
-                    '<div class="sk-circle6 sk-circle"></div>'+
-                    '<div class="sk-circle7 sk-circle"></div>'+
-                    '<div class="sk-circle8 sk-circle"></div>'+
-                    '<div class="sk-circle9 sk-circle"></div>'+
-                    '<div class="sk-circle10 sk-circle"></div>'+
-                    '<div class="sk-circle11 sk-circle"></div>'+
-                    '<div class="sk-circle12 sk-circle"></div>'+
-               ' </div>'+
-            '</div>';
-            var el=document.createElement('div');
-            var obj=document.querySelector('#loading');
-            el.id="loading";
-            el.innerHTML=tmp;
-            if(obj && !isok){
-                document.body.removeChild(obj);
-            }
-            if(!obj && isok){
-                document.body['appendChild'](el);
-            }
-            // obj && document.body.removeChild(obj);
-            // isok && document.body['appendChild'](el);
+                '<div class="loading" style=" position: fixed; top:0;right:0;bottom:0;left:0;width:100%;height:100; display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;-webkit-box-pack: center;box-pack: center;-webkit-justify-content: center;justify-content: center;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;z-index:99">'+
+                    '<div style="background: rgba(0,0,0,0.6); padding:15px; border-radius: 8px;color:#fff; font-size:initial"><img src="images/loading.svg"></div>'+
+                '</div>';
+        var box = document.querySelector('.loading');
+        box || document.body.insertAdjacentHTML('beforeend',tmp);
+        _[isok?'fadeIn':'fadeOut']('.loading')
     },
     /*
         提示框
@@ -244,49 +296,49 @@ var _ ={
     toast:function(msg,callback,delay){
         if(!msg) return
         var tmp=
-                '<div class="toastBox" style=" position: fixed; max-width:80%;  top:70%; background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 8px;color:#fff; display:none;z-index:99999">'+
-                    msg +
+                '<div class="toastBox" style="position: fixed; top:0;right:0;bottom:0;left:0;width:100%;height:100; display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;-webkit-box-pack: center;box-pack: center;-webkit-justify-content: center;justify-content: center;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;z-index:99999">'+
+                    '<div style="background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 8px;color:#fff;font-size:.2rem">'+msg+'</div>'+
             '</div>';
-        $('.toastBox').remove()
-        $('body').append(tmp)
+        var box = document.querySelector('.toastBox div');
+        box ? box.innerHTML = msg : document.body.insertAdjacentHTML('beforeend',tmp);
         
-        var toast=$('.toastBox');
-        var w= $(window).outerWidth();
-        var _w=toast.outerWidth();
-        toast.css('left',(w-_w)/2+'px');
-        toast.fadeIn()
+        _.fadeIn('.toastBox');
+              
         setTimeout(function(){
-             toast.fadeOut(function(){
-                callback && callback();
-            })
+             _.fadeOut('.toastBox',callback);
         }, delay || 2000)
     },
-    n: function (num){
-        return num < 10 ? ('0'+num):(''+num);
+    fadeIn:function(el) {
+        var el = document.querySelector(el)
+      el.style.opacity = 0;
 
-    },
-    PayWinBack:function(){//支付成功后倒计时
-        var DownTimer = $("#DownTime");
+      var last = +new Date();
+      var tick = function() {
+        el.style.opacity = +el.style.opacity + (new Date() - last) / 400;
+        last = +new Date();
+        if (+el.style.opacity < 1) {
+          (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 16);
+        }
+      };
+      tick();
+    }, 
+    fadeOut:function(el,cb) {
+        var el = document.querySelector(el)
+          el.style.opacity = 1;
 
-        var PayData = JSON.parse(_.getLocalStorage("PayData"));
-        var Num = 5;
-        var Timer = null;
-        function DownTime(){
-            Timer = setInterval(function(){
-                Num--;
-                DownTimer.html(_.n(Num));
-                if(Num <= 0){
-                    clearInterval(Timer);
-                    window.localStorage.removeItem("PayData");
-                    window.location.replace(decodeURIComponent(PayData.PayBackUrl));
-                };
-            },900);
-        };
-        DownTime();
-        $(".ToBackUrl a").on("touchstart",function(){
-            window.location.replace(decodeURIComponent(PayData.PayBackUrl));
-        });
-    },
+          var last = +new Date();
+          var tick = function() {
+            el.style.opacity = +el.style.opacity - (new Date() - last) / 400;
+            last = +new Date();
+            if (+el.style.opacity > 0) {
+              (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 16);
+            }else{
+                cb && cb();
+                el && el.parentNode.removeChild(el);
+            }
+          };
+      tick();
+    },     
     CursorMoveEnd:function(obj){ //光标移动到最后
         var Obj = document.getElementById(obj);
         Obj.focus(); 
@@ -299,35 +351,6 @@ var _ ={
         } else if (typeof Obj.selectionStart == 'number' && typeof Obj.selectionEnd == 'number') { 
             Obj.selectionStart = Obj.selectionEnd = len; 
         } 
-    },
-    // 同盾
-    TongDun: function(sessionId) {
-        // 传递给同盾服务器
-        _fmOpt = {
-            partner: 'tuandai',
-            appName: 'tuandai_web',
-            token: sessionId
-        }
-        var cimg = new Image(1,1);
-        cimg.onload = function() {
-            _fmOpt.imgLoaded = true;
-        }
-        cimg.src = "https://fp.fraudmetrix.cn/fp/clear.png?partnerCode=tuandai&appName=tuandai_web&tokenId=" + _fmOpt.token;
-        var fm = document.createElement('script'); fm.type = 'text/javascript'; fm.async = true;
-        fm.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'static.fraudmetrix.cn/fm.js?ver=0.1&t=' + (new Date().getTime()/3600000).toFixed(0);
-        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(fm, s);
-
-        // 传递给 api
-        var method = 'H5ReportDeviceInfo',
-            params,
-            version = '3.7',
-            userToken = this.getLocalStorage('userToken');
-        params = 'jsonString={"TongDunTokenId":"'+ sessionId +'","WebUrl":"'+ encodeURIComponent(window.location.href) +'"}';
-        getDataFromApi(method, params, version, userToken, function(data) {
-            if (data.Result == 1) {
-                console.log('成功');
-            }
-        });
     },
     /*微信授权交互*/
     redirectUrl: function(){
@@ -342,26 +365,36 @@ var _ ={
             ];
 
             location.href="https://open.weixin.qq.com/connect/oauth2/authorize?"+param.join('&');
-    }
+    },
+    Encode: function (str) {  /*字符转换*/
+        var s = "";
+        if(typeof str != 'string') return str;
+        if (str.length == 0) return "";
+        s = str.replace(/&/g, "&amp;");
+        s = s.replace(/</g, "&lt;");
+        s = s.replace(/>/g, "&gt;");
+        s = s.replace(/ /g, "&nbsp;");
+        s = s.replace(/\'/g, "&#39;");
+        s = s.replace(/\"/g, "&quot;");
+        s = s.replace(/\n/g, "<br>");
+        return s;
+    },
+    Decode: function (str) {  /*字符转换*/
+        var s = "";
+        if (str.length == 0) return "";
+        s = str.replace(/&amp;/g, "&");
+        s = s.replace(/&lt;/g, "<");
+        s = s.replace(/&gt;/g, ">");
+        s = s.replace(/&nbsp;/g, " ");
+        s = s.replace(/&#39;/g, "\'");
+        s = s.replace(/&quot;/g, "\"");
+        s = s.replace(/<br>/g, "\n");
+        return s;
+    },
 
 }
 
 
-var MsgTime = null;
-var cMonMsg=function(msg,clas){
-    if($(".cm-tips").length > 0){
-        $("body .cm-tips").remove();
-    };
-    var arr = [];
-    clearTimeout(MsgTime);
-    arr.push('<p class="cm-tips">');
-    arr.push('<span class="txt">'+msg+'</span>');
-    arr.push('</p>');
-    $("body "+(clas ? ('.'+clas) :'')+"").append(arr.join(""));
-    MsgTime=setTimeout(function(){
-        $("body .cm-tips").remove();
-    },4000);
-};
 // 加密相关
 var appKey = "00002";
 var appKeySecret = "A0B5C2D4E7F90301";
@@ -373,39 +406,6 @@ var aesEncrypt = function(data, keyStr, ivStr) {
     return CryptoJS.enc.Base64.stringify(encrypted.ciphertext);
 }
 
-// 请求接口 
-function getDataFromApi(method, params, versionName, userToken, succesCallback, errorCallback) {
-    var routerUrl = _.routerUrl;
-    var method = method;
-    var params = params;
-    var versionName = versionName;
-    var userToken = userToken;
-    var t = new Date().getTime();
-
-    params = "{'" + params.replace(/=/g, "':'").replace(/&/g, "','") + "'}";
-    params = eval('(' + params + ')');
-    var jsonString = params['jsonString'].replace('}', ',t:' + t + '}');
-    jsonString = aesEncrypt(jsonString, appKeySecret, appKeySecret);
-    // appKey, jsonString, userToken, v
-    var signStr = appKeySecret + 'appKey' + appKey + 'jsonString' + jsonString + 'userToken' + userToken + 'v' + versionName + appKeySecret;
-    var sign = CryptoJS.SHA1(signStr).toString().toUpperCase();
-    routerUrl += method;
-    routerUrl += userToken == '' ? '?appKey=' + appKey + '&v=' + versionName + '&sign=' + sign : '?appKey=' + appKey + '&v=' + versionName + '&userToken=' + userToken + '&sign=' + sign;
-
-    $.ajax({
-        type: "post",
-        url: routerUrl,
-        data: { jsonString: jsonString },
-        dataType: 'json',
-        success: function(data) {
-            typeof succesCallback == 'function' && succesCallback(data);
-        },
-        error: function(a, b, c) {
-            console.log("error!");
-            typeof errorCallback == 'function' && errorCallback(a, b, c);
-        }
-    });
-}
 
 // 与 app 交互的 JsBridge
 function cMwebViewJsBridge(callback) {
@@ -423,16 +423,21 @@ function cMwebViewJsBridge(callback) {
         } else {
             //初始化执行这里
             document.addEventListener('WebViewJavascriptBridgeReady', function() {
-                WebViewJavascriptBridge.init(function(message, responseCallback) {
-                    var data = {
-                        'Javascript Responds': 'Wee!'
-                    }
-                    responseCallback(data);
-                });
                 callback && callback(WebViewJavascriptBridge, isAndroid);
             }, false);
         };
     };
+}
+
+function cMwebViewJsBridgeInit(){
+    if(_.isIOS()){
+        cMwebViewJsBridge(function(bridge) {  
+            bridge.init(function(message, responseCallback) {
+                var data = { 'Javascript Responds':'Wee!' }
+                responseCallback(data)
+            })
+        })  
+    }
 }
 
 /*
@@ -1270,3 +1275,17 @@ CryptoJS.lib.Cipher || function(p) {
         });
     p.AES = h._createHelper(i)
 })();
+
+/********************************原生JS扩展****************************************/
+/*toRetain方法，不进行四舍五入保留小数点后几位*/
+Number.prototype.toRetain = function(n){
+    if(this == 0) return this;
+    var inx = this.toString().indexOf('.');
+    n = n || 0;
+    if(inx > -1){
+        return this.toString().substring(0,inx+n+1);
+    }else{
+        return this.toString()
+    }
+}
+

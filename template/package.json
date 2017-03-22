@@ -1,16 +1,19 @@
 {
-  "name": "{{ name }}",
+  "name": "vuetp",
   "version": "1.0.0",
-  "description": "{{ description }}",
+  "description": "A Vue.js project",
   "main": "src/app.js",
   "scripts": {
     "dev": "webpack-dev-server --inline --hot --quiet --progress --host 0.0.0.0 --port 8990",
     "https": "webpack-dev-server --inline --hot --quiet --progress --https --host 0.0.0.0 --port 8999",
     "build": "rimraf build && cross-env NODE_ENV=production webpack --progress --hide-modules"
   },
-  "author": "{{ author }}",
+  "author": "lihui",
   "license": "ISC",
   "devDependencies": {
+    "niiwoo-login":"*",
+    "niiwoo-register":"*",
+    "niiwoo-forgetpwd":"*",
     "autoprefixer-loader": "^3.2.0",
     "babel-core": "^6.10.4",
     "babel-loader": "^6.2.4",

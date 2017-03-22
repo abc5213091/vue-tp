@@ -1,72 +1,35 @@
 <template>
+ 	<div> 
+ 		<a @click="loading">loading...</a>
+ 		<a @click="toast">toast</a>
+ 		<a @click="isDialog = true">dialog</a>
+ 		<a @click="bridge">cMwebViewJsBridge</a>
+ 		<a @click="$store.dispatch('login',{phone:'13100001133', password:'test123'})">ajax</a>
 
-	<div v-if="!user.user.realName">
-		<xhead></xhead>
-		<div class="container" >
-			<div class="bg2">
-				<h1 class="logo">你我金融</h1>
-				<div class="form">
-					<div class="form-item">
-						<div class="item-main">
-							<!-- <div class="item-media"><i class="form-icon fa fa-user"></i></div> -->
-							<div class="item-media"><i class="iconfont icon-nwuser"></i></div>
-							<div class="item-control">
-								<input type="tel" maxlength="11" placeholder="请输入手机号码" v-model="phone">
-							</div>
-							<div class="item-operate fa fa-times-circle" v-show="phone" @click="phone = ''"></div>
-						</div>
-					</div>
-					<div class="form-item">
-						<div class="item-main">
-							<!-- <div class="item-media"><i class="form-icon fa fa-lock"></i></div> -->
-							<div class="item-media"><i class="iconfont icon-nwpassword"></i></div>
-							<div class="item-control">
-								<input maxlength="16" placeholder="请输入密码" type="password" v-model="password">
-							</div>
-							<div class="item-operate fa " v-show="password" @click="togglePassword"></div>
-						</div>
-						<!-- <div class="item-sub"><a href="javascript:">忘记密码？</a></div> -->
-					</div>
-				</div>
-				<div class="msg" v-show="msg" v-text="msg"></div>
-			</div>
-			<div class="btn-group">
-				<a class="btn btn-main" href="javascript:" @click="login">登 录</a>
-			</div>
+ 		<router-link to="login">login</router-link>
+
+
+ 		<!-- dialog组件 -->
+		<xdialog :show="isDialog" v-on:hide="isDialog = false"  :title="'弹出框'">
 			<p>
-				<router-link to="/list">Go to list</router-link>
+				我是一个安静的弹出框
 			</p>
-		</div>
-		<xfoot></xfoot>
-	</div>
-	<div v-else>
-		<ul>
-			<li v-for="(v,k) in user.user">{{k}}------{{v}}</li>
-		</ul>
-	</div>
+		</xdialog>
+ 	</div>
+
 </template>
 <script>
-	import xhead from '../components/head'
-	import xfoot from '../components/foot'
 	import { mapGetters } from 'vuex'
 	// const initData = async store =>{
 	// 	await store.dispatch('getUser')
 	// }
 	export default {
+		
 		data() {
 			return {
-				phone: '',
-				password: '',
-				access_token: '',
-				openid: '',
-				showLoading: true,
-				showEye: false,
-				inputType: 'password',
-				isHaveProject: '',
-				inputType: 'password',
-				msg: '',
-				isWX: false
+				isDialog:false
 			}
+				
 		},
 		computed: {
 			...mapGetters({
@@ -74,8 +37,7 @@
 			})
 		},
 		components: {
-			xhead,
-			xfoot
+			
 		},
 		// mounted(){
 		// 	initData(this.$store)
@@ -86,17 +48,46 @@
 		// 	}
 		// },
 		methods: {
-			togglePassword() {
-				this.inputType = (this.inputType == 'password') ? 'text' : 'password';
+			loading(){
+				_.loading(1)
 			},
-			// 点击登录
-			login() {
-				if (!this.phone) {
-					this.msg = '请输入手机号码';
-				} else if (!this.password) {
-					this.msg = '请输入密码';
-				} else {
-					this.$store.dispatch('login',{phone:this.phone, password:this.password});
+			toast(){
+				_.toast('this is a toast!')
+			},
+			bridge() {
+	
+				if(!_.isInNiiwooApp()){
+					_.toast('请在App中测试！')
+				}else{
+					_.loading(1)
+					/*初始化APP桥接*/
+					cMwebViewJsBridgeInit();
+					
+					function BridgeInit(bridge, isAndroid){
+					    if (isAndroid) {
+					        bridge.callHandler('10005', '{Status:true}', 'showUT');
+					    } else {
+					         bridge.callHandler('10005', {Status:true}, showUT);
+					     }
+					}
+					window.showUT=function(data){
+						try {
+							data = JSON.parse(data)
+						} catch(e) {
+							// statements
+							alert('JSON格式化出错！')
+						}
+
+						if(data.Data.UserToken){
+							
+								_.loading(0)
+								
+								_.toast(JSON.stringify(data.Data))
+							
+						}
+					}
+
+					cMwebViewJsBridge(BridgeInit);
 				}
 			}
 
@@ -104,3 +95,7 @@
 		
 	}
 </script>
+<style type="text/css" scoped>
+	a { display: block; margin: .3rem .3rem 0; padding: .2rem 0; border-radius: .1rem; font-size: .28rem; text-align: center; color: #fff; background-color: #2ad378; text-decoration: none;}
+a:nth-of-type(1) { margin-top: .3rem;}
+</style>
