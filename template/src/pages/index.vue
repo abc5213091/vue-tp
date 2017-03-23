@@ -5,6 +5,7 @@
  		<a @click="isDialog = true">dialog</a>
  		<a @click="bridge">cMwebViewJsBridge</a>
  		<a @click="$store.dispatch('login',{phone:'13100001133', password:'test123'})">ajax</a>
+ 		<a @click="$store.dispatch('loginFecth',{phone:'13100001133', password:'test123'})">fetch</a>
 
  		<router-link to="login">login</router-link>
 
@@ -39,9 +40,11 @@
 		components: {
 			
 		},
-		// mounted(){
-		// 	initData(this.$store)
-		// },
+		mounted(){
+			/*初始化APP桥接*/
+			cMwebViewJsBridgeInit();
+
+		},
 		// watch: {
 		// 	'$route'(){
 		// 		initData(this.$store)
@@ -60,8 +63,7 @@
 					_.toast('请在App中测试！')
 				}else{
 					_.loading(1)
-					/*初始化APP桥接*/
-					cMwebViewJsBridgeInit();
+					
 					
 					function BridgeInit(bridge, isAndroid){
 					    if (isAndroid) {

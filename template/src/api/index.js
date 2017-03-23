@@ -28,7 +28,33 @@ Vue.mixin({
 
 				opt.cb && opt.cb(db);
 			});
+		},
+		fetch(opt){
+
+			if(!opt) return;
+			let  {url,data}= _.assembly(opt);
+			//发送之前执行的方法
+			opt.beforeCB && opt.beforeCB();
+
+			fetch(url, {
+			  method: "POST",
+			  headers: {
+			    "Content-Type": "application/x-www-form-urlencoded"
+			  },
+			  body: "jsonString="+encodeURIComponent(data.jsonString)
+			}).then(function(res) {
+				return res.json()
+			}).then(function(db){
+				db = _.formatData(db);
+				if(db.Result==2){
+					//登陆失效,返回登陆页
+					router.go('/login');
+				}
+
+				opt.cb && opt.cb(db);
+			})
 		}
+
 	}
 })
 

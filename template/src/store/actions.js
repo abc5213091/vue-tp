@@ -21,3 +21,22 @@ export const login = ({ commit }, config) => {
 	}
 	vm.ajax(opt);
 }
+
+export const loginFecth = ({ commit }, config) => {
+	let opt = {
+		method: 'PostUserLogin',
+		version: '1.0',
+		params: {
+			userName: config.phone,
+			password: config.password
+		},
+		cb: json =>{
+			if(json.Result == '1'){
+				_.toast(JSON.stringify(json.Data))
+	    	}else{
+	    		_.toast(json.Message)
+	    	}
+		}
+	}
+	vm.fetch(opt);
+}
