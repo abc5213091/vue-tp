@@ -297,7 +297,7 @@ var _ ={
         if(!msg) return
         var tmp=
                 '<div class="toastBox" style="position: fixed; top:0;right:0;bottom:0;left:0;width:100%;height:100; display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;-webkit-box-pack: center;box-pack: center;-webkit-justify-content: center;justify-content: center;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;z-index:99999">'+
-                    '<div style="width:80%;background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 8px;color:#fff;font-size:.2rem">'+msg+'</div>'+
+                    '<div style="max-width:80%;background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 8px;color:#fff;font-size:.2rem">'+msg+'</div>'+
             '</div>';
         var box = document.querySelector('.toastBox div');
         box ? box.innerHTML = msg : document.body.insertAdjacentHTML('beforeend',tmp);
