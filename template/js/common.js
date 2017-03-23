@@ -210,7 +210,7 @@ var _ ={
     },
     // 重组参数
     assembly:function(opt){
-        var  jsonString , signStr , sign , userToken = _.getLocalStorage("userToken") || null,
+        var  jsonString , signStr , sign , userToken = opt.params.userToken || _.getLocalStorage("userToken") || null,
         _default={
             url : _.routerUrl,
             method : '',
@@ -281,7 +281,7 @@ var _ ={
     },
     loading:function(isok){
         var tmp=
-                '<div class="loading" style=" position: fixed; top:0;right:0;bottom:0;left:0;width:100%;height:100; display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;-webkit-box-pack: center;box-pack: center;-webkit-justify-content: center;justify-content: center;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;z-index:99">'+
+                '<div class="loading" style=" position: fixed; top:0;right:0;bottom:0;left:0;width:100%;height:100; display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;-webkit-box-pack: center;box-pack: center;-webkit-justify-content: center;justify-content: center;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;z-index:9999">'+
                     '<div style="background: rgba(0,0,0,0.6); padding:15px; border-radius: 8px;color:#fff; font-size:initial"><img src="images/loading.svg"></div>'+
                 '</div>';
         var box = document.querySelector('.loading');
@@ -297,7 +297,7 @@ var _ ={
         if(!msg) return
         var tmp=
                 '<div class="toastBox" style="position: fixed; top:0;right:0;bottom:0;left:0;width:100%;height:100; display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;-webkit-box-pack: center;box-pack: center;-webkit-justify-content: center;justify-content: center;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;z-index:99999">'+
-                    '<div style="background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 8px;color:#fff;font-size:.2rem">'+msg+'</div>'+
+                    '<div style="width:80%;background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 8px;color:#fff;font-size:.2rem">'+msg+'</div>'+
             '</div>';
         var box = document.querySelector('.toastBox div');
         box ? box.innerHTML = msg : document.body.insertAdjacentHTML('beforeend',tmp);
@@ -351,20 +351,6 @@ var _ ={
         } else if (typeof Obj.selectionStart == 'number' && typeof Obj.selectionEnd == 'number') { 
             Obj.selectionStart = Obj.selectionEnd = len; 
         } 
-    },
-    /*微信授权交互*/
-    redirectUrl: function(){
-        var url = location.href;
-        var phpUrl = url.substring(0,url.indexOf('fast-loan-tb')+12) + '/php/wx.php';
-        var param = [
-                'appid=wxb3d25457b5a6fe49',
-                'redirect_uri='+ encodeURIComponent(phpUrl),
-                'response_type=code',
-                'scope=snsapi_base',
-                'state='+encodeURIComponent(url)+'#wechat_redirect'
-            ];
-
-            location.href="https://open.weixin.qq.com/connect/oauth2/authorize?"+param.join('&');
     },
     Encode: function (str) {  /*字符转换*/
         var s = "";
