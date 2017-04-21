@@ -11,6 +11,9 @@
   "author": "lihui",
   "license": "ISC",
   "devDependencies": {
+    "niiwoo-login":"*",
+    "niiwoo-register":"*",
+    "niiwoo-forgetpwd":"*",
     "autoprefixer-loader": "^3.2.0",
     "babel-core": "6.21.0",
     "babel-loader": "6.2.10",
