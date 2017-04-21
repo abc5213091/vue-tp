@@ -11,7 +11,7 @@
 
 
  		<!-- dialog组件 -->
-		<xdialog :show="isDialog" v-on:hide="isDialog = false"  :title="'弹出框'">
+		<xdialog :show="isDialog" v-on:hide="isDialog = false"  :title="'弹出框'" :sure-cb="callback">
 			<p>
 				我是一个安静的弹出框
 			</p>
@@ -43,6 +43,8 @@
 		mounted(){
 			/*初始化APP桥接*/
 			cMwebViewJsBridgeInit();
+			this.$store.dispatch('login',{phone:'13100001133', password:'test123'})
+			this.$store.dispatch('login',{phone:'13100001133', password:'test123'})
 
 		},
 		// watch: {
@@ -51,8 +53,15 @@
 		// 	}
 		// },
 		methods: {
+			callback(){
+				alert(1)
+			},
 			loading(){
 				_.loading(1)
+				 setTimeout(function(){
+		             _.loading(0)
+		        }, 2000)
+
 			},
 			toast(){
 				_.toast('this is a toast!')

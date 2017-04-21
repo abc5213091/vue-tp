@@ -210,7 +210,7 @@ var _ ={
     },
     // 重组参数
     assembly:function(opt){
-        var  jsonString , signStr , sign , userToken = opt.params.userToken || _.getLocalStorage("userToken") || null,
+        var  jsonString , signStr , sign , userToken = (opt.params && opt.params.userToken) || _.getLocalStorage("userToken") || '',
         _default={
             url : _.routerUrl,
             method : '',
@@ -279,14 +279,41 @@ var _ ={
         }
         return db;
     },
-    loading:function(isok){
+    loading:function(isok,s,cb){
+        var flexCss = 'display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;-webkit-box-pack: center;box-pack: center;-webkit-justify-content: center;justify-content: center;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;'
         var tmp=
-                '<div class="loading" style=" position: fixed; top:0;right:0;bottom:0;left:0;width:100%;height:100; display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;-webkit-box-pack: center;box-pack: center;-webkit-justify-content: center;justify-content: center;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;z-index:9999">'+
-                    '<div style="background: rgba(0,0,0,0.6); padding:15px; border-radius: 8px;color:#fff; font-size:initial"><img src="images/loading.svg"></div>'+
+                '<div class="loading" style=" position: fixed; top:0;right:0;bottom:0;left:0;width:100%;height:100%; z-index:9999;'+flexCss+'">'+
+                    '<div style="position: relative;width:2rem;height:2rem;background: rgba(0,0,0,0.6);border-radius: 8px;color:#fff; '+flexCss+'">'+
+                    '<img src="images/loading.svg" style="width:1.2rem;height:1.2rem">'+
+                    (s ? '<span id="loading_s" style="position:absolute;top:0;left:0; display: inline-block; width:100%;height:100%;'+flexCss+'">'+s+'S</span>' : '')+
+                    '</div>'+
                 '</div>';
         var box = document.querySelector('.loading');
+        
+        var t = null;
         box || document.body.insertAdjacentHTML('beforeend',tmp);
-        _[isok?'fadeIn':'fadeOut']('.loading')
+
+        
+        if(isok){
+            _.fadeIn('.loading')
+        }else{
+            if(!isok && !_.loadingStack.length){
+                _.fadeOut('.loading');
+             }
+        }
+
+        var loading_s = document.querySelector('#loading_s');
+        s && ( t = setInterval(function(){
+
+            if(s<=1){
+                clearInterval(t);
+                !_.loadingStack.length && _.fadeOut('.loading');
+                cb && cb();
+                return;
+            }
+            s--;
+            loading_s.innerHTML = s + 'S';
+        }, 1000) )
     },
     /*
         提示框
@@ -297,7 +324,7 @@ var _ ={
         if(!msg) return
         var tmp=
                 '<div class="toastBox" style="position: fixed; top:0;right:0;bottom:0;left:0;width:100%;height:100; display:-webkit-box;display:-webkit-flex;display:flex;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;-webkit-box-pack: center;box-pack: center;-webkit-justify-content: center;justify-content: center;-webkit-box-align: center;box-align: center;-webkit-align-items: center;align-items: center;z-index:99999">'+
-                    '<div style="width:80%;background: rgba(0,0,0,0.6); padding: 10px 15px; border-radius: 8px;color:#fff;font-size:.2rem">'+msg+'</div>'+
+                    '<div style="max-width:80%;background: rgba(0,0,0,0.6); padding: .2rem .3rem; border-radius: 4px;color:#fff;font-size:.28rem">'+msg+'</div>'+
             '</div>';
         var box = document.querySelector('.toastBox div');
         box ? box.innerHTML = msg : document.body.insertAdjacentHTML('beforeend',tmp);
@@ -324,20 +351,24 @@ var _ ={
     }, 
     fadeOut:function(el,cb) {
         var el = document.querySelector(el)
+
           el.style.opacity = 1;
 
           var last = +new Date();
           var tick = function() {
-            el.style.opacity = +el.style.opacity - (new Date() - last) / 400;
-            last = +new Date();
-            if (+el.style.opacity > 0) {
-              (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 16);
-            }else{
-                cb && cb();
-                el && el.parentNode.removeChild(el);
-            }
-          };
-      tick();
+                el.style.opacity = +el.style.opacity - (new Date() - last) / 400;
+                last = +new Date();
+                if (+el.style.opacity > 0) {
+                  (window.requestAnimationFrame && requestAnimationFrame(tick)) || setTimeout(tick, 16);
+                }else{
+                    cb && cb();
+                    try {
+                        el && el.parentNode.removeChild(el);
+                    } catch(e) {}
+                    
+                }
+              };
+          tick();
     },     
     CursorMoveEnd:function(obj){ //光标移动到最后
         var Obj = document.getElementById(obj);
